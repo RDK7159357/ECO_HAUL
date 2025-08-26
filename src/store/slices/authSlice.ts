@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 export interface User {
   id: string;
@@ -20,6 +21,77 @@ export interface AuthState {
   isAuthenticated: boolean;
   error: string | null;
 }
+
+// Helper function to store token securely
+const storeTokenSecurely = async (token: string) => {
+  try {
+    if (Platform.OS === 'web') {
+      // Fallback to AsyncStorage for web
+      await AsyncStorage.setItem('auth_token', token);
+    } else {
+      // Check if SecureStore is available
+      const isAvailable = await SecureStore.isAvailableAsync();
+      if (!isAvailable) {
+        console.warn('SecureStore is not available, falling back to AsyncStorage');
+        await AsyncStorage.setItem('auth_token', token);
+        return;
+      }
+      // Use SecureStore for native platforms
+      await SecureStore.setItemAsync('auth_token', token);
+    }
+  } catch (error) {
+    console.error('Error storing token securely:', error);
+    // Fallback to AsyncStorage on any error
+    await AsyncStorage.setItem('auth_token', token);
+  }
+};
+
+// Helper function to get token securely
+const getTokenSecurely = async (): Promise<string | null> => {
+  try {
+    if (Platform.OS === 'web') {
+      // Fallback to AsyncStorage for web
+      return await AsyncStorage.getItem('auth_token');
+    } else {
+      // Check if SecureStore is available
+      const isAvailable = await SecureStore.isAvailableAsync();
+      if (!isAvailable) {
+        console.warn('SecureStore is not available, falling back to AsyncStorage');
+        return await AsyncStorage.getItem('auth_token');
+      }
+      // Use SecureStore for native platforms
+      return await SecureStore.getItemAsync('auth_token');
+    }
+  } catch (error) {
+    console.error('Error getting token securely:', error);
+    // Fallback to AsyncStorage on any error
+    return await AsyncStorage.getItem('auth_token');
+  }
+};
+
+// Helper function to delete token securely
+const deleteTokenSecurely = async () => {
+  try {
+    if (Platform.OS === 'web') {
+      // Fallback to AsyncStorage for web
+      await AsyncStorage.removeItem('auth_token');
+    } else {
+      // Check if SecureStore is available
+      const isAvailable = await SecureStore.isAvailableAsync();
+      if (!isAvailable) {
+        console.warn('SecureStore is not available, falling back to AsyncStorage');
+        await AsyncStorage.removeItem('auth_token');
+        return;
+      }
+      // Use SecureStore for native platforms
+      await SecureStore.deleteItemAsync('auth_token');
+    }
+  } catch (error) {
+    console.error('Error deleting token securely:', error);
+    // Fallback to AsyncStorage on any error
+    await AsyncStorage.removeItem('auth_token');
+  }
+};
 
 const initialState: AuthState = {
   user: null,
@@ -49,7 +121,7 @@ export const loginUser = createAsyncThunk(
       };
 
       // Store token securely
-      await SecureStore.setItemAsync('auth_token', mockResponse.token);
+      await storeTokenSecurely(mockResponse.token);
       await AsyncStorage.setItem('user_data', JSON.stringify(mockResponse.user));
 
       return mockResponse;
@@ -78,7 +150,7 @@ export const registerUser = createAsyncThunk(
       };
 
       // Store token securely
-      await SecureStore.setItemAsync('auth_token', mockResponse.token);
+      await storeTokenSecurely(mockResponse.token);
       await AsyncStorage.setItem('user_data', JSON.stringify(mockResponse.user));
 
       return mockResponse;
@@ -92,7 +164,7 @@ export const loadStoredAuth = createAsyncThunk(
   'auth/loadStoredAuth',
   async (_, { rejectWithValue }) => {
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
+      const token = await getTokenSecurely();
       const userDataString = await AsyncStorage.getItem('user_data');
       
       if (token && userDataString) {
@@ -111,7 +183,7 @@ export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-      await SecureStore.deleteItemAsync('auth_token');
+      await deleteTokenSecurely();
       await AsyncStorage.removeItem('user_data');
       return null;
     } catch (error: any) {
