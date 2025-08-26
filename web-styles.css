@@ -1,0 +1,23 @@
+/* Web-specific styles for scrolling */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.analytics-scroll {
+  overflow-y: auto !important;
+  height: 100vh;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure proper scrolling on web */
+.RNCSafeAreaProvider {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Fix for React Native Web scrolling issues */
+[data-focusable="true"] {
+  outline: none;
+}

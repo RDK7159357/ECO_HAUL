@@ -74,8 +74,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <Text style={styles.title}>EcoHaul</Text>
           <Text style={styles.subtitle}>
@@ -93,6 +98,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                 value={name}
                 onChangeText={setName}
                 autoCapitalize="words"
+                autoComplete="name"
+                textContentType="name"
               />
             </View>
           )}
@@ -106,6 +113,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
             />
           </View>
 
@@ -117,6 +126,9 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              autoComplete="password"
+              textContentType="password"
+              passwordRules="minlength: 6;"
             />
           </View>
 
@@ -129,6 +141,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
+                autoComplete="password"
+                textContentType="newPassword"
               />
             </View>
           )}
@@ -209,6 +223,8 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
+    minHeight: 44, // Ensure minimum touch target
+    color: '#333', // Explicit text color
   },
   error: {
     color: '#d32f2f',

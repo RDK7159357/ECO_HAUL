@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Animated,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppSelector } from '../store/hooks';
@@ -178,7 +179,15 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.scrollWrapper}>
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContentContainer}
+          nestedScrollEnabled={true}
+          keyboardShouldPersistTaps="handled"
+          bounces={Platform.OS === 'ios'}
+        >
         <Animated.View style={{ opacity: fadeAnim }}>
           {/* Period Selector */}
           <View style={styles.periodSelector}>
@@ -308,7 +317,8 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
 
           <View style={styles.bottomSpacing} />
         </Animated.View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </View>
   );
 };
@@ -355,6 +365,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollWrapper: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    flexGrow: 1,
+    paddingBottom: Platform.OS === 'web' ? 60 : 20,
+    minHeight: Platform.OS === 'web' ? '100%' : 'auto',
   },
   periodSelector: {
     flexDirection: 'row',
