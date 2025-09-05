@@ -8,7 +8,10 @@ import {
   Dimensions,
   Image,
   Animated,
+  StatusBar,
+  Vibration,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchUserStats, fetchLeaderboard } from '../store/slices/userSlice';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,6 +30,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
+  const [pulseAnim] = useState(new Animated.Value(1));
+  const [rotateAnim] = useState(new Animated.Value(0));
+  const [scaleAnim] = useState(new Animated.Value(1));
+  const [bounceAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
     if (user) {
@@ -47,13 +54,103 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Start pulse animation for floating button
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseAnimation.start();
+
+    // Rotating icon animation
+    const rotateAnimation = Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 20000,
+        useNativeDriver: true,
+      })
+    );
+    rotateAnimation.start();
+
+    // Bounce animation for achievements
+    const bounceAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    bounceAnimation.start();
   }, [user, dispatch]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return '🌅 Good Morning';
-    if (hour < 17) return '🌞 Good Afternoon';
-    return '🌙 Good Evening';
+    const day = new Date().getDay();
+    const isWeekend = day === 0 || day === 6;
+    
+    if (hour < 6) return '🌙 Late night eco-warrior';
+    if (hour < 12) {
+      if (isWeekend) return '🌅 Weekend vibes, keep going!';
+      return '🌅 Good Morning, Earth Hero!';
+    }
+    if (hour < 17) {
+      if (isWeekend) return '☀️ Weekend eco-mission';
+      return '🌞 Afternoon impact time!';
+    }
+    if (hour < 20) return '� Evening sustainability check';
+    return '✨ Night owl making a difference!';
+  };
+
+  const getMotivationalQuote = () => {
+    const quotes = [
+      "Every small action creates waves of change! 🌊",
+      "You're building a greener tomorrow! 🌱",
+      "Sustainability is your superpower! ⚡",
+      "Making the planet proud, one item at a time! 🌍",
+      "Eco-warrior mode: ACTIVATED! 🚀",
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
+  };
+
+  const handleHapticFeedback = () => {
+    Vibration.vibrate(50);
+  };
+
+  const handleActionPress = (screenName: string) => {
+    handleHapticFeedback();
+    
+    // Scale animation on press
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    navigation.navigate(screenName);
   };
 
   const getStreakEmoji = (streak: number) => {
@@ -63,40 +160,61 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Enhanced Header */}
-      <View style={styles.appHeader}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity style={styles.profileButton}>
-            <Image 
-              source={{ uri: user?.avatar || 'https://via.placeholder.com/40' }} 
-              style={styles.profileImage}
-            />
-          </TouchableOpacity>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Enhanced Header */}
+        <View style={styles.appHeader}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity 
+              style={styles.profileButton}
+              onPress={() => {
+                handleHapticFeedback();
+                // Add profile navigation later
+              }}
+            >
+              <LinearGradient
+                colors={['#4CAF50', '#45A049']}
+                style={styles.profileGradient}
+              >
+                <Image 
+                  source={{ uri: user?.avatar || 'https://via.placeholder.com/40' }} 
+                  style={styles.profileImage}
+                />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <Text style={styles.appTitle}>EcoHaul</Text>
+          </Animated.View>
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={styles.notificationIcon}
+              onPress={handleHapticFeedback}
+            >
+              <Ionicons name="notifications-outline" size={24} color="#333" />
+              <View style={styles.notificationDot} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.analyticsIcon}
+              onPress={() => handleActionPress('Analytics')}
+            >
+              <Ionicons name="analytics-outline" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
         </View>
-        <Text style={styles.appTitle}>EcoHaul</Text>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.notificationIcon}>
-            <Ionicons name="notifications-outline" size={24} color="#333" />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>2</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.analyticsIcon}
-            onPress={() => navigation.navigate('Analytics')}
-          >
-            <Ionicons name="analytics-outline" size={24} color="#333" />
-          </TouchableOpacity>
-        </View>
-      </View>
 
       <Animated.View style={{
         opacity: fadeAnim,
         transform: [{ translateY: slideAnim }]
       }}>
         {/* Enhanced Welcome Card */}
-        <View style={styles.welcomeCard}>
+        <LinearGradient
+          colors={['#4CAF50', '#66BB6A', '#43A047']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.welcomeCard}
+        >
           <View style={styles.welcomeBackground}>
             <Ionicons name="leaf-outline" size={120} color="rgba(255,255,255,0.1)" style={styles.backgroundIcon} />
           </View>
@@ -104,20 +222,27 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
           <View style={styles.welcomeHeader}>
             <View style={styles.welcomeContent}>
               <Text style={styles.greeting}>{getGreeting()}, {user?.name || 'Sarah'}!</Text>
-              <Text style={styles.subtitle}>You've made a real impact today 🌱</Text>
+              <Text style={styles.subtitle}>{getMotivationalQuote()}</Text>
               <View style={styles.streakContainer}>
-                <Text style={styles.streakText}>
-                  {getStreakEmoji(stats?.currentStreak || 5)} {stats?.currentStreak || 5} day streak
-                </Text>
+                <Animated.View style={{ transform: [{ translateY: bounceAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }] }}>
+                  <Text style={styles.streakText}>
+                    {getStreakEmoji(stats?.currentStreak || 5)} {stats?.currentStreak || 5} day streak
+                  </Text>
+                </Animated.View>
               </View>
             </View>
-            <View style={styles.pointsContainer}>
+            <TouchableOpacity 
+              style={styles.pointsContainer}
+              onPress={handleHapticFeedback}
+            >
               <View style={styles.pointsIcon}>
-                <Ionicons name="diamond" size={16} color="#FFD700" />
+                <Animated.View style={{ transform: [{ rotate: rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }}>
+                  <Ionicons name="diamond" size={16} color="#FFD700" />
+                </Animated.View>
               </View>
               <Text style={styles.pointsText}>{user?.points?.toLocaleString() || '2,847'}</Text>
               <Text style={styles.pointsLabel}>points</Text>
-            </View>
+            </TouchableOpacity>
           </View>
           
           {/* Enhanced Progress Section */}
@@ -145,39 +270,53 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
             </View>
             
             <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBar, { width: `${Math.min(((stats?.monthlyItems || 34) / 50) * 100, 100)}%` }]} />
+              <LinearGradient
+                colors={['#81C784', '#FFFFFF']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.progressBar, { width: `${Math.min(((stats?.monthlyItems || 34) / 50) * 100, 100)}%` }]}
+              />
               <View style={styles.progressGlow} />
             </View>
           </View>
-        </View>
+        </LinearGradient>
 
         {/* Today's Impact Card */}
         <View style={styles.impactCard}>
           <View style={styles.impactHeader}>
-            <Ionicons name="earth" size={24} color="#4CAF50" />
+            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+              <Ionicons name="earth" size={24} color="#4CAF50" />
+            </Animated.View>
             <Text style={styles.impactTitle}>Today's Impact</Text>
+            <View style={styles.impactSparkle}>
+              <Ionicons name="sparkles" size={16} color="#FFD700" />
+            </View>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.impactScroll}>
-            <View style={styles.impactStat}>
+            <Animated.View style={[styles.impactStat, { transform: [{ translateY: bounceAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -2] }) }] }]}>
               <Text style={styles.impactNumber}>2.3kg</Text>
               <Text style={styles.impactLabel}>CO₂ Saved</Text>
               <Ionicons name="cloud-outline" size={16} color="#4CAF50" />
-            </View>
-            <View style={styles.impactStat}>
+              <View style={styles.statGlow} />
+            </Animated.View>
+            <Animated.View style={[styles.impactStat, { transform: [{ translateY: bounceAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) }] }]}>
               <Text style={styles.impactNumber}>156L</Text>
               <Text style={styles.impactLabel}>Water Saved</Text>
               <Ionicons name="water-outline" size={16} color="#2196F3" />
-            </View>
-            <View style={styles.impactStat}>
+              <View style={[styles.statGlow, { backgroundColor: 'rgba(33, 150, 243, 0.1)' }]} />
+            </Animated.View>
+            <Animated.View style={[styles.impactStat, { transform: [{ translateY: bounceAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -1] }) }] }]}>
               <Text style={styles.impactNumber}>8</Text>
               <Text style={styles.impactLabel}>Items Recycled</Text>
               <Ionicons name="refresh-outline" size={16} color="#FF9800" />
-            </View>
-            <View style={styles.impactStat}>
+              <View style={[styles.statGlow, { backgroundColor: 'rgba(255, 152, 0, 0.1)' }]} />
+            </Animated.View>
+            <Animated.View style={[styles.impactStat, { transform: [{ translateY: bounceAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }] }]}>
               <Text style={styles.impactNumber}>0.5m²</Text>
               <Text style={styles.impactLabel}>Landfill Saved</Text>
               <Ionicons name="leaf-outline" size={16} color="#4CAF50" />
-            </View>
+              <View style={styles.statGlow} />
+            </Animated.View>
           </ScrollView>
         </View>
 
@@ -206,30 +345,46 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       <View style={styles.quickActionsSection}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
-          <TouchableOpacity 
-            style={styles.actionCard}
-            onPress={() => navigation.navigate('Scanner')}
-          >
-            <View style={styles.actionIcon}>
-              <Ionicons name="camera" size={24} color="#4CAF50" />
-            </View>
-            <Text style={styles.actionTitle}>Start Scanning</Text>
-            <Text style={styles.actionSubtitle}>Identify items for disposal</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionCard}
-            onPress={() => navigation.navigate('Cart')}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#E3F2FD' }]}>
-              <Ionicons name="cart" size={24} color="#1976D2" />
-              <View style={styles.cartBadge}>
-                <Text style={styles.cartBadgeText}>3</Text>
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => handleActionPress('Scanner')}
+            >
+              <View style={styles.actionIcon}>
+                <Ionicons name="camera" size={24} color="#4CAF50" />
+                <View style={styles.iconGlow} />
               </View>
-            </View>
-            <Text style={styles.actionTitle}>Disposal Cart</Text>
-            <Text style={styles.actionSubtitle}>Review items to dispose</Text>
-          </TouchableOpacity>
+              <Text style={styles.actionTitle}>Start Scanning</Text>
+              <Text style={styles.actionSubtitle}>Identify items for disposal</Text>
+              <View style={styles.actionArrow}>
+                <Ionicons name="arrow-forward" size={16} color="#4CAF50" />
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+          
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => handleActionPress('Cart')}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#E3F2FD' }]}>
+                <Ionicons name="cart" size={24} color="#1976D2" />
+                {cartItems?.length > 0 && (
+                  <Animated.View style={[styles.cartBadge, { transform: [{ scale: pulseAnim }] }]}>
+                    <Text style={styles.cartBadgeText}>{cartItems?.length || 0}</Text>
+                  </Animated.View>
+                )}
+                <View style={[styles.iconGlow, { backgroundColor: 'rgba(25, 118, 210, 0.1)' }]} />
+              </View>
+              <Text style={styles.actionTitle}>Disposal Cart</Text>
+              <Text style={styles.actionSubtitle}>
+                {cartItems?.length > 0 ? `${cartItems.length} items to dispose` : 'No items yet'}
+              </Text>
+              <View style={styles.actionArrow}>
+                <Ionicons name="arrow-forward" size={16} color="#1976D2" />
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
         
         <View style={styles.actionsGrid}>
@@ -242,6 +397,54 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
             </View>
             <Text style={styles.actionTitle}>Find Locations</Text>
             <Text style={styles.actionSubtitle}>Nearby disposal services</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => navigation.navigate('DisposalGuide')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: '#E8F5E8' }]}>
+              <Ionicons name="information-circle" size={24} color="#388E3C" />
+            </View>
+            <Text style={styles.actionTitle}>Disposal Guide</Text>
+            <Text style={styles.actionSubtitle}>Learn proper disposal methods</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.actionsGrid}>
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => navigation.navigate('Analytics')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: '#F3E5F5' }]}>
+              <Ionicons name="analytics" size={24} color="#7B1FA2" />
+            </View>
+            <Text style={styles.actionTitle}>Analytics</Text>
+            <Text style={styles.actionSubtitle}>View your eco impact</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => navigation.navigate('Learning')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: '#FFF8E1' }]}>
+              <Ionicons name="school" size={24} color="#F57F17" />
+            </View>
+            <Text style={styles.actionTitle}>AI Learning</Text>
+            <Text style={styles.actionSubtitle}>Help improve detection</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.actionsGrid}>
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => navigation.navigate('Feedback')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: '#E1F5FE' }]}>
+              <Ionicons name="chatbubble-ellipses" size={24} color="#0277BD" />
+            </View>
+            <Text style={styles.actionTitle}>Feedback</Text>
+            <Text style={styles.actionSubtitle}>Help us improve</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -295,21 +498,31 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
       </Animated.View>
 
       {/* Floating Scan Button */}
-      <TouchableOpacity 
-        style={styles.floatingButton}
-        onPress={() => navigation.navigate('Scanner')}
-      >
-        <Ionicons name="camera" size={24} color="white" />
-        <Text style={styles.floatingButtonText}>Scan Item</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      <Animated.View style={[styles.floatingButtonContainer, { transform: [{ scale: pulseAnim }] }]}>
+        <TouchableOpacity 
+          onPress={() => handleActionPress('Scanner')}
+        >
+          <LinearGradient
+            colors={['#4CAF50', '#45A049']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.floatingButton}
+          >
+            <Ionicons name="camera" size={24} color="white" />
+            <Text style={styles.floatingButtonText}>Scan Item</Text>
+            <View style={styles.floatingGlow} />
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
+      </ScrollView>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f7fa',
   },
   appHeader: {
     flexDirection: 'row',
@@ -317,13 +530,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 50,
-    paddingBottom: 15,
+    paddingBottom: 20,
     backgroundColor: 'white',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 5,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   headerLeft: {
     width: 40,
@@ -341,18 +556,27 @@ const styles = StyleSheet.create({
   },
   notificationIcon: {
     marginRight: 10,
+    position: 'relative',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF4444',
   },
   helpIcon: {},
   welcomeCard: {
-    backgroundColor: '#4CAF50',
     margin: 20,
-    borderRadius: 15,
-    padding: 20,
+    borderRadius: 20,
+    padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
   },
   welcomeHeader: {
     flexDirection: 'row',
@@ -361,14 +585,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   greeting: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontWeight: '800',
     color: 'white',
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: 6,
+    letterSpacing: 0.2,
   },
   pointsContainer: {
     flexDirection: 'row',
@@ -428,47 +654,54 @@ const styles = StyleSheet.create({
   },
   achievementCard: {
     backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    width: 200,
-    marginRight: 12,
+    borderRadius: 16,
+    padding: 20,
+    width: 220,
+    marginRight: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   achievementTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#333',
-    marginTop: 8,
+    marginTop: 12,
+    letterSpacing: 0.3,
   },
   achievementSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
-    marginTop: 4,
+    marginTop: 6,
+    lineHeight: 18,
   },
   achievementPoints: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#FF6B35',
-    marginTop: 8,
+    marginTop: 12,
+    letterSpacing: 0.3,
   },
   achievementTime: {
     fontSize: 12,
     color: '#999',
-    marginTop: 2,
+    marginTop: 4,
+    fontWeight: '500',
   },
   quickActionsSection: {
     paddingHorizontal: 20,
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#333',
-    marginBottom: 15,
+    marginBottom: 18,
+    letterSpacing: 0.3,
   },
   actionsGrid: {
     flexDirection: 'row',
@@ -477,25 +710,48 @@ const styles = StyleSheet.create({
   actionCard: {
     flex: 1,
     backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     marginRight: 6,
     marginLeft: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0,0,0,0.05)',
+    position: 'relative',
   },
   actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#E8F5E8',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
     position: 'relative',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  iconGlow: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    top: 0,
+    left: 0,
+  },
+  actionArrow: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    opacity: 0.6,
   },
   cartBadge: {
     position: 'absolute',
@@ -514,15 +770,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   actionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#333',
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: 0.2,
   },
   actionSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
-    lineHeight: 16,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   leaderboardSection: {
     paddingHorizontal: 20,
@@ -547,17 +805,19 @@ const styles = StyleSheet.create({
   },
   leaderboardItem: {
     backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 6,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   leaderboardLeft: {
     flexDirection: 'row',
@@ -630,30 +890,51 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
-  floatingButton: {
+  floatingButtonContainer: {
     position: 'absolute',
     bottom: 90,
     right: 20,
-    backgroundColor: '#4CAF50',
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    borderRadius: 30,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  floatingButton: {
+    borderRadius: 30,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    position: 'relative',
+  },
+  floatingGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   floatingButtonText: {
     color: 'white',
-    fontWeight: '600',
-    marginLeft: 8,
-    fontSize: 14,
+    fontWeight: '700',
+    marginLeft: 10,
+    fontSize: 16,
+    letterSpacing: 0.5,
+    zIndex: 1,
   },
   // Missing styles for enhanced dashboard components
   profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileGradient: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -769,6 +1050,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 15,
+    position: 'relative',
   },
   impactTitle: {
     fontSize: 16,
@@ -776,41 +1058,62 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 10,
   },
+  impactSparkle: {
+    position: 'absolute',
+    right: 0,
+    opacity: 0.7,
+  },
   impactScroll: {
     marginHorizontal: -5,
   },
   impactStat: {
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    marginHorizontal: 5,
-    minWidth: 100,
+    backgroundColor: '#f8fafe',
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    marginHorizontal: 6,
+    minWidth: 110,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.1)',
+    position: 'relative',
+  },
+  statGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 16,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
   },
   impactNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#333',
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: 0.5,
   },
   impactLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
-    marginBottom: 8,
+    marginBottom: 10,
     textAlign: 'center',
+    fontWeight: '500',
   },
   impactCard: {
     backgroundColor: 'white',
     margin: 20,
     marginTop: 0,
-    borderRadius: 15,
-    padding: 20,
+    borderRadius: 18,
+    padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
 });
 

@@ -8,8 +8,10 @@ import {
   Image,
   Alert,
   Modal,
-  TextInput,
+  Animated,
+  Vibration,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { removeItemFromCart, updateItemCategory, clearCart } from '../store/slices/cartSlice';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,53 +23,55 @@ interface CartScreenProps {
 const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [editingItemName, setEditingItemName] = useState<string>('');
-  const [showDisposalOptions, setShowDisposalOptions] = useState<boolean>(false);
+  const [scaleAnim] = useState(new Animated.Value(1));
+  const [fadeAnim] = useState(new Animated.Value(0));
   
   const dispatch = useAppDispatch();
   const { items, totalItems, totalPoints } = useAppSelector((state) => state.cart);
 
-  const categories = ['Plastic', 'Recyclable', 'Compostable', 'Trash', 'Hazardous', 'Electronic', 'Glass', 'Metal'];
+  React.useEffect(() => {
+    // Fade in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
-  const handleEditItem = (itemId: string, currentName: string, currentCategory: string) => {
+  const handleHapticFeedback = () => {
+    Vibration.vibrate(50);
+  };
+
+  const handleInteractivePress = (callback: () => void) => {
+    handleHapticFeedback();
+    
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    callback();
+  };
+
+  const handleEditCategory = (itemId: string, currentCategory: string) => {
     setEditingItem(itemId);
-    setEditingItemName(currentName);
     setSelectedCategory(currentCategory);
   };
 
-  const handleSaveEdit = () => {
-    if (editingItem) {
-      // Update both name and category if needed
-      dispatch(updateItemCategory({ id: editingItem, category: selectedCategory }));
-      // You might need to add updateItemName action to your slice
-      setEditingItem(null);
-      setEditingItemName('');
-      setSelectedCategory('');
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingItem(null);
-    setEditingItemName('');
-    setSelectedCategory('');
-  };
-
-  const handleSubmitCart = () => {
+  const handleFindDisposalCenters = () => {
     if (items.length === 0) {
       Alert.alert('Empty Cart', 'Please add items to your cart first.');
       return;
     }
-    setShowDisposalOptions(true);
-  };
-
-  const handleSelfDisposal = () => {
-    setShowDisposalOptions(false);
-    navigation.navigate('DisposalInstructions', { items });
-  };
-
-  const handleExternalDisposal = () => {
-    setShowDisposalOptions(false);
-    navigation.navigate('DisposalAgents', { items });
+    navigation.navigate('DisposalCenters');
   };
 
   const getCategoryCounts = () => {
@@ -104,36 +108,51 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
   if (items.length === 0) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
+        <LinearGradient
+          colors={['#ffffff', '#f8f9fa']}
+          style={styles.header}
+        >
           <TouchableOpacity 
-            onPress={() => navigation.goBack()}
+            onPress={() => handleInteractivePress(() => navigation.goBack())}
             style={styles.backButton}
           >
             <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Cart (0 items)</Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={handleHapticFeedback}>
               <Ionicons name="share-outline" size={24} color="#333" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.moreButton}>
+            <TouchableOpacity style={styles.moreButton} onPress={handleHapticFeedback}>
               <Ionicons name="ellipsis-vertical" size={24} color="#333" />
             </TouchableOpacity>
           </View>
-        </View>
+        </LinearGradient>
 
-        <View style={styles.emptyContainer}>
-          <Ionicons name="cart-outline" size={64} color="#ccc" />
+        <Animated.View style={[styles.emptyContainer, { opacity: fadeAnim }]}>
+          <View style={styles.emptyIconContainer}>
+            <LinearGradient
+              colors={['#E8F5E8', '#f0f8f0']}
+              style={styles.emptyIconGradient}
+            >
+              <Ionicons name="cart-outline" size={64} color="#4CAF50" />
+            </LinearGradient>
+          </View>
           <Text style={styles.emptyText}>Your cart is empty</Text>
-          <Text style={styles.emptySubtext}>Start scanning items to add them to your cart</Text>
+          <Text style={styles.emptySubtext}>Start scanning items to add them to your cart and make a positive impact!</Text>
           <TouchableOpacity 
-            style={styles.scanButton}
-            onPress={() => navigation.navigate('Scanner')}
+            style={styles.scanButtonContainer}
+            onPress={() => handleInteractivePress(() => navigation.navigate('Scanner'))}
           >
-            <Ionicons name="camera" size={20} color="white" />
-            <Text style={styles.scanButtonText}>Start Scanning</Text>
+            <LinearGradient
+              colors={['#4CAF50', '#45A049']}
+              style={styles.scanButton}
+            >
+              <Ionicons name="camera" size={20} color="white" />
+              <Text style={styles.scanButtonText}>Start Scanning</Text>
+            </LinearGradient>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     );
   }
@@ -142,189 +161,146 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Enhanced Header */}
+      <LinearGradient
+        colors={['#ffffff', '#f8f9fa']}
+        style={styles.header}
+      >
         <TouchableOpacity 
-          onPress={() => navigation.goBack()}
+          onPress={() => handleInteractivePress(() => navigation.goBack())}
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Cart ({totalItems} items)</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleHapticFeedback}>
             <Ionicons name="share-outline" size={24} color="#333" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.moreButton}>
+          <TouchableOpacity style={styles.moreButton} onPress={handleHapticFeedback}>
             <Ionicons name="ellipsis-vertical" size={24} color="#333" />
           </TouchableOpacity>
         </View>
-      </View>
+      </LinearGradient>
 
-      {/* Category Summary */}
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Category Summary</Text>
-        <View style={styles.categoryGrid}>
-          {Object.entries(categoryCounts).map(([category, count]) => (
-            <View key={category} style={styles.categoryBox}>
-              <Ionicons 
-                name={getCategoryIcon(category)} 
-                size={24} 
-                color={getCategoryColor(category)} 
-              />
-              <Text style={styles.categoryCount}>{count}</Text>
-              <Text style={styles.categoryLabel}>{category}</Text>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        {/* Enhanced Impact Summary */}
+        <View style={styles.impactSummary}>
+          <LinearGradient
+            colors={['#4CAF50', '#66BB6A']}
+            style={styles.impactGradient}
+          >
+            <View style={styles.impactHeader}>
+              <Ionicons name="leaf" size={24} color="white" />
+              <Text style={styles.impactTitle}>Your Environmental Impact</Text>
             </View>
-          ))}
+            <View style={styles.impactStats}>
+              <View style={styles.impactStat}>
+                <Text style={styles.impactNumber}>{Math.round(totalItems * 2.3)}kg</Text>
+                <Text style={styles.impactLabel}>CO₂ Saved</Text>
+              </View>
+              <View style={styles.impactStat}>
+                <Text style={styles.impactNumber}>{totalItems * 15}L</Text>
+                <Text style={styles.impactLabel}>Water Saved</Text>
+              </View>
+              <View style={styles.impactStat}>
+                <Text style={styles.impactNumber}>{totalPoints}</Text>
+                <Text style={styles.impactLabel}>Points</Text>
+              </View>
+            </View>
+          </LinearGradient>
         </View>
-      </View>
 
-      {/* Items List */}
-      {items.map((item) => (
-        <View key={item.id} style={styles.itemCard}>
-          <Image source={{ uri: item.image }} style={styles.itemImage} />
-          <View style={styles.itemContent}>
-            <View style={styles.itemHeader}>
-              {editingItem === item.id ? (
-                <TextInput
-                  style={styles.itemNameInput}
-                  value={editingItemName}
-                  onChangeText={setEditingItemName}
-                  placeholder="Item name"
-                />
-              ) : (
+        {/* Category Summary */}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryHeader}>
+            <Ionicons name="pie-chart" size={20} color="#4CAF50" />
+            <Text style={styles.summaryTitle}>Category Summary</Text>
+          </View>
+          <View style={styles.categoryGrid}>
+            {Object.entries(categoryCounts).map(([category, count]) => (
+              <View key={category} style={styles.categoryBox}>
+                <View style={[styles.categoryIconContainer, { backgroundColor: `${getCategoryColor(category)}15` }]}>
+                  <Ionicons 
+                    name={getCategoryIcon(category)} 
+                    size={24} 
+                    color={getCategoryColor(category)} 
+                  />
+                </View>
+                <Text style={styles.categoryCount}>{count}</Text>
+                <Text style={styles.categoryLabel}>{category}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Items List */}
+        {items.map((item, index) => (
+          <Animated.View 
+            key={item.id} 
+            style={[
+              styles.itemCard,
+              { 
+                transform: [{ scale: scaleAnim }],
+                opacity: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 1],
+                })
+              }
+            ]}
+          >
+            <Image source={{ uri: item.image }} style={styles.itemImage} />
+            <View style={styles.itemContent}>
+              <View style={styles.itemHeader}>
                 <Text style={styles.itemName}>{item.name}</Text>
-              )}
-              <TouchableOpacity 
-                onPress={() => editingItem === item.id 
-                  ? handleSaveEdit() 
-                  : handleEditItem(item.id, item.name, item.customCategory || item.category)
-                }
-                style={styles.editButton}
-              >
-                <Ionicons 
-                  name={editingItem === item.id ? "checkmark" : "pencil"} 
-                  size={16} 
-                  color={editingItem === item.id ? "#4CAF50" : "#666"} 
-                />
-              </TouchableOpacity>
-              {editingItem === item.id && (
                 <TouchableOpacity 
-                  onPress={handleCancelEdit}
-                  style={styles.cancelButton}
+                  onPress={() => handleInteractivePress(() => handleEditCategory(item.id, item.customCategory || item.category))}
+                  style={styles.editButton}
                 >
-                  <Ionicons name="close" size={16} color="#F44336" />
+                  <Ionicons name="pencil" size={16} color="#4CAF50" />
                 </TouchableOpacity>
-              )}
+              </View>
+              
+              <View style={[styles.categoryTag, { backgroundColor: `${getCategoryColor(item.customCategory || item.category)}15` }]}>
+                <Text style={[styles.categoryText, { color: getCategoryColor(item.customCategory || item.category) }]}>
+                  {item.customCategory || item.category}
+                </Text>
+              </View>
+              
+              <View style={styles.itemFooter}>
+                <View style={styles.confidenceContainer}>
+                  <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                  <Text style={styles.confidenceText}>Confidence: {Math.round((item.confidence || 0.95) * 100)}%</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.infoButton}
+                  onPress={() => handleInteractivePress(() => Alert.alert('Item Info', `${item.name}\nCategory: ${item.customCategory || item.category}\nPoints: ${item.points}`))}
+                >
+                  <Ionicons name="information-circle" size={20} color="#2196F3" />
+                </TouchableOpacity>
+              </View>
             </View>
-            
-            {editingItem === item.id ? (
-              <View style={styles.categorySelector}>
-                <Text style={styles.categorySelectorLabel}>Category:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  {categories.map((category) => (
-                    <TouchableOpacity
-                      key={category}
-                      style={[
-                        styles.categoryOption,
-                        selectedCategory === category && styles.selectedCategoryOption
-                      ]}
-                      onPress={() => setSelectedCategory(category)}
-                    >
-                      <Text style={[
-                        styles.categoryOptionText,
-                        selectedCategory === category && styles.selectedCategoryOptionText
-                      ]}>
-                        {category}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            ) : (
-              <View style={styles.categoryTag}>
-                <Text style={styles.categoryText}>{item.customCategory || item.category}</Text>
-              </View>
-            )}
-            
-            <View style={styles.itemFooter}>
-              <View style={styles.confidenceContainer}>
-                <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
-                <Text style={styles.confidenceText}>Confidence: {Math.round((item.confidence || 0.95) * 100)}%</Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.infoButton}
-                onPress={() => Alert.alert('Item Info', `${item.name}\nCategory: ${item.customCategory || item.category}\nPoints: ${item.points}`)}
-              >
-                <Ionicons name="information-circle" size={20} color="#2196F3" />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.removeButton}
-                onPress={() => dispatch(removeItemFromCart(item.id))}
-              >
-                <Ionicons name="trash-outline" size={16} color="#F44336" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      ))}
+            <View style={styles.itemGlow} />
+          </Animated.View>
+        ))}
 
-      {/* Submit Button */}
-      <TouchableOpacity 
-        style={styles.submitButton}
-        onPress={handleSubmitCart}
-      >
-        <Ionicons name="send" size={20} color="white" />
-        <Text style={styles.submitButtonText}>Submit for Disposal</Text>
-      </TouchableOpacity>
-      
-      {/* Disposal Options Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showDisposalOptions}
-        onRequestClose={() => setShowDisposalOptions(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Choose Disposal Method</Text>
-            <Text style={styles.modalSubtitle}>How would you like to dispose of your items?</Text>
-            
-            <TouchableOpacity 
-              style={styles.disposalOption}
-              onPress={handleSelfDisposal}
-            >
-              <Ionicons name="person" size={24} color="#4CAF50" />
-              <View style={styles.optionContent}>
-                <Text style={styles.optionTitle}>I will dispose them on my own</Text>
-                <Text style={styles.optionDescription}>Get detailed step-by-step instructions</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#666" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.disposalOption}
-              onPress={handleExternalDisposal}
-            >
-              <Ionicons name="business" size={24} color="#2196F3" />
-              <View style={styles.optionContent}>
-                <Text style={styles.optionTitle}>Choose external disposal agents</Text>
-                <Text style={styles.optionDescription}>Find professional disposal services near you</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#666" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.modalCloseButton}
-              onPress={() => setShowDisposalOptions(false)}
-            >
-              <Text style={styles.modalCloseText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-      
-      <View style={styles.bottomSpacing} />
+        {/* Action Button */}
+        <TouchableOpacity 
+          style={styles.findLocationsButtonContainer}
+          onPress={() => handleInteractivePress(handleFindDisposalCenters)}
+        >
+          <LinearGradient
+            colors={['#4CAF50', '#45A049']}
+            style={styles.findLocationsButton}
+          >
+            <Ionicons name="location" size={20} color="white" />
+            <Text style={styles.findLocationsText}>Find Disposal Locations</Text>
+            <Ionicons name="arrow-forward" size={16} color="white" />
+          </LinearGradient>
+        </TouchableOpacity>
+        
+        <View style={styles.bottomSpacing} />
+      </Animated.View>
     </ScrollView>
   );
 };
@@ -332,7 +308,7 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f7fa',
   },
   header: {
     flexDirection: 'row',
@@ -340,13 +316,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 15,
-    backgroundColor: 'white',
+    paddingBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 5,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   backButton: {
     width: 40,
@@ -377,49 +354,155 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 40,
   },
+  emptyIconContainer: {
+    marginBottom: 24,
+  },
+  emptyIconGradient: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   emptyText: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '700',
     color: '#333',
     marginTop: 20,
+    letterSpacing: 0.5,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
+    marginTop: 12,
+    lineHeight: 24,
+    paddingHorizontal: 20,
+  },
+  scanButtonContainer: {
+    marginTop: 40,
   },
   scanButton: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 25,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    borderRadius: 30,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 30,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
   },
   scanButtonText: {
     color: 'white',
-    fontWeight: '600',
-    marginLeft: 8,
+    fontWeight: '700',
+    marginLeft: 12,
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
+  // Impact Summary Styles
+  impactSummary: {
+    margin: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  impactGradient: {
+    padding: 24,
+  },
+  impactHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  impactTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
+    marginLeft: 12,
+    letterSpacing: 0.3,
+  },
+  impactStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  impactStat: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  impactNumber: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  impactLabel: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  // Summary Card Styles
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  categoryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  // Item Card Styles
+  itemGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 16,
+    backgroundColor: 'rgba(76, 175, 80, 0.05)',
+  },
+  // Button Styles
+  findLocationsButtonContainer: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 30,
+    overflow: 'hidden',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  // Removed duplicate definition of scanButtonText
   summaryCard: {
     backgroundColor: 'white',
     margin: 20,
-    borderRadius: 15,
-    padding: 20,
+    borderRadius: 18,
+    padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   summaryTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#333',
-    marginBottom: 15,
+    marginLeft: 8,
+    letterSpacing: 0.3,
   },
   categoryGrid: {
     flexDirection: 'row',
@@ -429,41 +512,50 @@ const styles = StyleSheet.create({
   categoryBox: {
     width: '22%',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#f8f9fa',
-    marginBottom: 8,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: '#f8fafe',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.1)',
   },
   categoryCount: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '800',
     color: '#333',
-    marginTop: 8,
+    marginTop: 12,
+    letterSpacing: 0.5,
   },
   categoryLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#666',
-    marginTop: 4,
+    marginTop: 6,
     textAlign: 'center',
+    fontWeight: '600',
   },
   itemCard: {
     backgroundColor: 'white',
     marginHorizontal: 20,
-    marginBottom: 12,
-    borderRadius: 15,
-    padding: 16,
+    marginBottom: 16,
+    borderRadius: 18,
+    padding: 20,
     flexDirection: 'row',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0,0,0,0.05)',
+    position: 'relative',
   },
   itemImage: {
     width: 80,
     height: 80,
-    borderRadius: 12,
-    marginRight: 16,
+    borderRadius: 16,
+    marginRight: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(76, 175, 80, 0.1)',
   },
   itemContent: {
     flex: 1,
@@ -484,17 +576,18 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   categoryTag: {
-    backgroundColor: '#E8F5E8',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     alignSelf: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.2)',
   },
   categoryText: {
     fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   itemFooter: {
     flexDirection: 'row',
@@ -514,158 +607,18 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   findLocationsButton: {
-    backgroundColor: '#4CAF50',
-    marginHorizontal: 20,
-    borderRadius: 25,
-    paddingVertical: 16,
+    paddingVertical: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
   },
   findLocationsText: {
     color: 'white',
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 16,
-    marginLeft: 8,
-  },
-  // New styles for editing functionality
-  itemNameInput: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    borderBottomWidth: 1,
-    borderBottomColor: '#4CAF50',
-    paddingBottom: 2,
-  },
-  cancelButton: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  categorySelector: {
-    marginBottom: 8,
-  },
-  categorySelectorLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-  },
-  categoryOption: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    marginLeft: 12,
     marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  selectedCategoryOption: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
-  },
-  categoryOptionText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
-  selectedCategoryOptionText: {
-    color: 'white',
-  },
-  removeButton: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  // Submit button styles
-  submitButton: {
-    backgroundColor: '#4CAF50',
-    marginHorizontal: 20,
-    borderRadius: 25,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  submitButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 16,
-    marginLeft: 8,
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    minHeight: 300,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  disposalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  optionContent: {
-    flex: 1,
-    marginLeft: 16,
-    marginRight: 8,
-  },
-  optionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  optionDescription: {
-    fontSize: 12,
-    color: '#666',
-    lineHeight: 16,
-  },
-  modalCloseButton: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 25,
-    paddingVertical: 12,
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  modalCloseText: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
+    letterSpacing: 0.5,
   },
   bottomSpacing: {
     height: 100,

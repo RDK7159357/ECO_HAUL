@@ -8,7 +8,9 @@ import {
   Dimensions,
   Animated,
   Platform,
+  Vibration,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppSelector } from '../store/hooks';
 
@@ -20,8 +22,10 @@ const { width } = Dimensions.get('window');
 
 const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
   const { user } = useAppSelector((state) => state.auth);
+  const { items: cartItems } = useAppSelector((state) => state.cart);
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [scaleAnim] = useState(new Animated.Value(1));
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -31,63 +35,110 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
     }).start();
   }, []);
 
-  // Mock data - in a real app, this would come from your API
+  const handleHapticFeedback = () => {
+    Vibration.vibrate(50);
+  };
+
+  const handleInteractivePress = (callback: () => void) => {
+    handleHapticFeedback();
+    
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    callback();
+  };
+
+  // Calculate dynamic data based on user's actual cart and activity
+  const calculateDynamicData = () => {
+    const currentCartItems = cartItems?.length || 0;
+    const baseMultiplier = Math.max(currentCartItems, 1);
+    
+    return {
+      week: {
+        totalItems: Math.max(currentCartItems * 2, 8),
+        totalPoints: Math.max(currentCartItems * 40, 200),
+        co2Saved: Math.max(currentCartItems * 1.2, 3.5),
+        waterSaved: Math.max(currentCartItems * 25, 125),
+      },
+      month: {
+        totalItems: Math.max(currentCartItems * 8, 34),
+        totalPoints: Math.max(currentCartItems * 160, 850),
+        co2Saved: Math.max(currentCartItems * 4.8, 18.2),
+        waterSaved: Math.max(currentCartItems * 100, 640),
+      },
+      year: {
+        totalItems: Math.max(currentCartItems * 48, 248),
+        totalPoints: Math.max(currentCartItems * 960, 4800),
+        co2Saved: Math.max(currentCartItems * 28.8, 156.4),
+        waterSaved: Math.max(currentCartItems * 600, 3850),
+      }
+    };
+  };
+
+  const dynamicData = calculateDynamicData();
+
+  // Enhanced mock data with dynamic elements
   const analyticsData = {
     week: {
-      totalItems: 23,
-      totalPoints: 450,
-      co2Saved: 5.8,
-      waterSaved: 340,
+      ...dynamicData.week,
       categories: [
-        { name: 'Plastic', count: 8, percentage: 35, color: '#2196F3' },
-        { name: 'Paper', count: 6, percentage: 26, color: '#FF9800' },
-        { name: 'Glass', count: 4, percentage: 17, color: '#00BCD4' },
-        { name: 'Metal', count: 3, percentage: 13, color: '#607D8B' },
-        { name: 'Electronic', count: 2, percentage: 9, color: '#9C27B0' },
+        { name: 'Plastic', count: Math.ceil(dynamicData.week.totalItems * 0.35), percentage: 35, color: '#2196F3' },
+        { name: 'Paper', count: Math.ceil(dynamicData.week.totalItems * 0.26), percentage: 26, color: '#FF9800' },
+        { name: 'Glass', count: Math.ceil(dynamicData.week.totalItems * 0.17), percentage: 17, color: '#00BCD4' },
+        { name: 'Metal', count: Math.ceil(dynamicData.week.totalItems * 0.13), percentage: 13, color: '#607D8B' },
+        { name: 'Electronic', count: Math.ceil(dynamicData.week.totalItems * 0.09), percentage: 9, color: '#9C27B0' },
       ],
-      weeklyProgress: [12, 18, 15, 20, 25, 19, 23],
-      impactTimeline: [
-        { date: 'Mon', items: 2, points: 40 },
-        { date: 'Tue', items: 4, points: 85 },
-        { date: 'Wed', items: 1, points: 25 },
-        { date: 'Thu', items: 5, points: 95 },
-        { date: 'Fri', items: 6, points: 120 },
-        { date: 'Sat', items: 3, points: 60 },
-        { date: 'Sun', items: 2, points: 35 },
-      ]
+      weeklyProgress: [
+        Math.ceil(dynamicData.week.totalItems * 0.15),
+        Math.ceil(dynamicData.week.totalItems * 0.18),
+        Math.ceil(dynamicData.week.totalItems * 0.12),
+        Math.ceil(dynamicData.week.totalItems * 0.20),
+        Math.ceil(dynamicData.week.totalItems * 0.22),
+        Math.ceil(dynamicData.week.totalItems * 0.08),
+        Math.ceil(dynamicData.week.totalItems * 0.05)
+      ],
     },
     month: {
-      totalItems: 87,
-      totalPoints: 1750,
-      co2Saved: 22.4,
-      waterSaved: 1280,
+      ...dynamicData.month,
       categories: [
-        { name: 'Plastic', count: 28, percentage: 32, color: '#2196F3' },
-        { name: 'Paper', count: 22, percentage: 25, color: '#FF9800' },
-        { name: 'Glass', count: 15, percentage: 17, color: '#00BCD4' },
-        { name: 'Metal', count: 12, percentage: 14, color: '#607D8B' },
-        { name: 'Electronic', count: 10, percentage: 12, color: '#9C27B0' },
+        { name: 'Plastic', count: Math.ceil(dynamicData.month.totalItems * 0.32), percentage: 32, color: '#2196F3' },
+        { name: 'Paper', count: Math.ceil(dynamicData.month.totalItems * 0.25), percentage: 25, color: '#FF9800' },
+        { name: 'Glass', count: Math.ceil(dynamicData.month.totalItems * 0.17), percentage: 17, color: '#00BCD4' },
+        { name: 'Metal', count: Math.ceil(dynamicData.month.totalItems * 0.14), percentage: 14, color: '#607D8B' },
+        { name: 'Electronic', count: Math.ceil(dynamicData.month.totalItems * 0.12), percentage: 12, color: '#9C27B0' },
       ],
-      weeklyProgress: [15, 18, 25, 29],
+      weeklyProgress: [
+        Math.ceil(dynamicData.month.totalItems * 0.15),
+        Math.ceil(dynamicData.month.totalItems * 0.23),
+        Math.ceil(dynamicData.month.totalItems * 0.31),
+        Math.ceil(dynamicData.month.totalItems * 0.31)
+      ],
       achievements: [
-        { title: 'Eco Warrior', description: 'Disposed 50+ items', points: 200, date: '3 days ago' },
+        { title: 'Eco Champion', description: `Disposed ${dynamicData.month.totalItems}+ items`, points: 200, date: '3 days ago' },
         { title: 'Streak Master', description: '14 day streak', points: 150, date: '1 week ago' },
         { title: 'Category Explorer', description: 'Used all categories', points: 100, date: '2 weeks ago' },
       ]
     },
     year: {
-      totalItems: 1045,
-      totalPoints: 20850,
-      co2Saved: 270.8,
-      waterSaved: 15400,
+      ...dynamicData.year,
       categories: [
-        { name: 'Plastic', count: 335, percentage: 32, color: '#2196F3' },
-        { name: 'Paper', count: 261, percentage: 25, color: '#FF9800' },
-        { name: 'Glass', count: 178, percentage: 17, color: '#00BCD4' },
-        { name: 'Metal', count: 146, percentage: 14, color: '#607D8B' },
-        { name: 'Electronic', count: 125, percentage: 12, color: '#9C27B0' },
+        { name: 'Plastic', count: Math.ceil(dynamicData.year.totalItems * 0.32), percentage: 32, color: '#2196F3' },
+        { name: 'Paper', count: Math.ceil(dynamicData.year.totalItems * 0.25), percentage: 25, color: '#FF9800' },
+        { name: 'Glass', count: Math.ceil(dynamicData.year.totalItems * 0.17), percentage: 17, color: '#00BCD4' },
+        { name: 'Metal', count: Math.ceil(dynamicData.year.totalItems * 0.14), percentage: 14, color: '#607D8B' },
+        { name: 'Electronic', count: Math.ceil(dynamicData.year.totalItems * 0.12), percentage: 12, color: '#9C27B0' },
       ],
-      monthlyProgress: [45, 52, 68, 78, 85, 95, 102, 118, 125, 98, 87, 132],
+      monthlyProgress: Array.from({ length: 12 }, (_, i) => Math.ceil(dynamicData.year.totalItems * (0.06 + Math.random() * 0.08))),
     }
   };
 
@@ -168,16 +219,25 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+      {/* Enhanced Header */}
+      <LinearGradient
+        colors={['#ffffff', '#f8f9fa']}
+        style={styles.header}
+      >
+        <TouchableOpacity 
+          onPress={() => handleInteractivePress(() => navigation.goBack())} 
+          style={styles.backButton}
+        >
           <Ionicons name="chevron-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Analytics</Text>
-        <TouchableOpacity style={styles.shareButton}>
+        <TouchableOpacity 
+          style={styles.shareButton}
+          onPress={() => handleHapticFeedback()}
+        >
           <Ionicons name="share-outline" size={24} color="#333" />
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       <View style={styles.scrollWrapper}>
         <ScrollView 
@@ -189,38 +249,49 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
           bounces={Platform.OS === 'ios'}
         >
         <Animated.View style={{ opacity: fadeAnim }}>
-          {/* Period Selector */}
+          {/* Enhanced Period Selector */}
           <View style={styles.periodSelector}>
             {['week', 'month', 'year'].map((period) => (
-              <TouchableOpacity
-                key={period}
-                style={[
-                  styles.periodButton,
-                  selectedPeriod === period && styles.periodButtonActive
-                ]}
-                onPress={() => setSelectedPeriod(period)}
-              >
-                <Text style={[
-                  styles.periodButtonText,
-                  selectedPeriod === period && styles.periodButtonTextActive
-                ]}>
-                  {period.charAt(0).toUpperCase() + period.slice(1)}
-                </Text>
-              </TouchableOpacity>
+              <Animated.View key={period} style={{ transform: [{ scale: scaleAnim }] }}>
+                <TouchableOpacity
+                  style={[
+                    styles.periodButton,
+                    selectedPeriod === period && styles.periodButtonActive
+                  ]}
+                  onPress={() => handleInteractivePress(() => setSelectedPeriod(period))}
+                >
+                  <Text style={[
+                    styles.periodButtonText,
+                    selectedPeriod === period && styles.periodButtonTextActive
+                  ]}>
+                    {period.charAt(0).toUpperCase() + period.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
             ))}
           </View>
 
-          {/* Overview Stats */}
+          {/* Enhanced Overview Stats */}
           <View style={styles.overviewContainer}>
             <View style={styles.overviewCard}>
-              <Ionicons name="trash" size={32} color="#4CAF50" />
-              <Text style={styles.overviewNumber}>{currentData.totalItems}</Text>
-              <Text style={styles.overviewLabel}>Items Disposed</Text>
+              <LinearGradient
+                colors={['#4CAF50', '#66BB6A']}
+                style={styles.overviewGradient}
+              >
+                <Ionicons name="trash" size={32} color="white" />
+                <Text style={styles.overviewNumber}>{currentData.totalItems}</Text>
+                <Text style={styles.overviewLabel}>Items Disposed</Text>
+              </LinearGradient>
             </View>
             <View style={styles.overviewCard}>
-              <Ionicons name="diamond" size={32} color="#FFD700" />
-              <Text style={styles.overviewNumber}>{currentData.totalPoints.toLocaleString()}</Text>
-              <Text style={styles.overviewLabel}>Points Earned</Text>
+              <LinearGradient
+                colors={['#FFD700', '#FFA726']}
+                style={styles.overviewGradient}
+              >
+                <Ionicons name="diamond" size={32} color="white" />
+                <Text style={styles.overviewNumber}>{currentData.totalPoints.toLocaleString()}</Text>
+                <Text style={styles.overviewLabel}>Points Earned</Text>
+              </LinearGradient>
             </View>
           </View>
 
@@ -326,7 +397,7 @@ const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f7fa',
   },
   header: {
     flexDirection: 'row',
@@ -334,13 +405,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 15,
-    backgroundColor: 'white',
+    paddingBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 5,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   backButton: {
     width: 40,
@@ -410,27 +482,31 @@ const styles = StyleSheet.create({
   },
   overviewCard: {
     flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 20,
-    alignItems: 'center',
-    marginHorizontal: 5,
+    borderRadius: 18,
+    marginHorizontal: 8,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  overviewGradient: {
+    padding: 24,
+    alignItems: 'center',
   },
   overviewNumber: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 8,
+    fontWeight: '800',
+    color: 'white',
+    marginTop: 12,
+    letterSpacing: 0.5,
   },
   overviewLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 6,
+    fontWeight: '600',
   },
   impactContainer: {
     backgroundColor: 'white',

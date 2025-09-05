@@ -5,7 +5,9 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Vibration,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 interface DisposalInstructionsScreenProps {
@@ -15,6 +17,15 @@ interface DisposalInstructionsScreenProps {
 
 const DisposalInstructionsScreen: React.FC<DisposalInstructionsScreenProps> = ({ navigation, route }) => {
   const { items } = route.params || { items: [] };
+
+  const handleHapticFeedback = () => {
+    Vibration.vibrate(50);
+  };
+
+  const handleInteractivePress = (callback: () => void) => {
+    handleHapticFeedback();
+    callback();
+  };
 
   const getDisposalInstructions = (category: string) => {
     const instructions: { [key: string]: string[] } = {
@@ -123,16 +134,19 @@ const DisposalInstructionsScreen: React.FC<DisposalInstructionsScreenProps> = ({
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#4CAF50', '#45A049']}
+        style={styles.header}
+      >
         <TouchableOpacity 
-          onPress={() => navigation.goBack()}
+          onPress={() => handleInteractivePress(() => navigation.goBack())}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={24} color="#333" />
+          <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Disposal Instructions</Text>
         <View style={styles.headerActions} />
-      </View>
+      </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.introCard}>
@@ -213,12 +227,11 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 15,
-    backgroundColor: 'white',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   backButton: {
     width: 40,
@@ -230,7 +243,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#fff',
     flex: 1,
     textAlign: 'center',
   },

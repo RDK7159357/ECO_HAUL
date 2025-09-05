@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Modal,
+  Vibration,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -20,11 +21,20 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({ navigation }) => {
   const [selectedTab, setSelectedTab] = useState('Categories');
   const [showFilter, setShowFilter] = useState(false);
 
+  const handleHapticFeedback = () => {
+    Vibration.vibrate(50);
+  };
+
+  const handleTabPress = (tab: string) => {
+    handleHapticFeedback();
+    setSelectedTab(tab);
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => { handleHapticFeedback(); navigation.goBack(); }}>
           <Ionicons name="chevron-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Disposal History</Text>
@@ -103,7 +113,7 @@ const HistoryScreen: React.FC<HistoryScreenProps> = ({ navigation }) => {
             <TouchableOpacity
               key={tab}
               style={[styles.tab, selectedTab === tab && styles.activeTab]}
-              onPress={() => setSelectedTab(tab)}
+              onPress={() => handleTabPress(tab)}
             >
               <Text style={[styles.tabText, selectedTab === tab && styles.activeTabText]}>
                 {tab}

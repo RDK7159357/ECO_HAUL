@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Vibration,
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { generateDisposalGuide } from '../store/slices/disposalSlice';
@@ -28,14 +29,20 @@ const DisposalGuideScreen: React.FC<DisposalGuideScreenProps> = ({ navigation })
   }, [dispatch, items]);
 
   const regenerateGuide = () => {
+    Vibration.vibrate(50);
     dispatch(generateDisposalGuide(items));
+  };
+
+  const handleBackPress = () => {
+    Vibration.vibrate(50);
+    navigation.goBack();
   };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={handleBackPress}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Disposal Guide</Text>

@@ -11,13 +11,15 @@ import { StatusBar } from 'expo-status-bar';
 // Screens
 import AuthScreen from '../src/screens/AuthScreen';
 import DashboardScreen from '../src/screens/DashboardScreen';
-import ScannerScreen from '../src/screens/ScannerScreen';
+import ScannerScreen from '../src/screens/AdaptiveScannerScreen';
 import CartScreen from '../src/screens/CartScreen';
 import DisposalCentersScreen from '../src/screens/DisposalCentersScreen';
 import DisposalGuideScreen from '../src/screens/DisposalGuideScreen';
 import DisposalInstructionsScreen from '../src/screens/DisposalInstructionsScreen';
 import DisposalAgentsScreen from '../src/screens/DisposalAgentsScreen';
 import AnalyticsScreen from '../src/screens/AnalyticsScreen';
+import FeedbackScreen from '../src/screens/FeedbackScreen';
+import LearningScreen from '../src/screens/LearningScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -102,6 +104,8 @@ const AppNavigator: React.FC = () => {
           <Stack.Screen name="DisposalInstructions" component={DisposalInstructionsScreen} />
           <Stack.Screen name="DisposalAgents" component={DisposalAgentsScreen} />
           <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+          <Stack.Screen name="Feedback" component={FeedbackScreen} />
+          <Stack.Screen name="Learning" component={LearningScreen} />
         </>
       ) : (
         // Unauthenticated stack

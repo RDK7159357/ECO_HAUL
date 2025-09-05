@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
+  Vibration,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 
@@ -36,6 +38,15 @@ const DisposalAgentsScreen: React.FC<DisposalAgentsScreenProps> = ({ navigation,
   const [agents, setAgents] = useState<DisposalAgent[]>([]);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const handleHapticFeedback = () => {
+    Vibration.vibrate(50);
+  };
+
+  const handleInteractivePress = (callback: () => void) => {
+    handleHapticFeedback();
+    callback();
+  };
 
   useEffect(() => {
     loadDisposalAgents();
@@ -236,15 +247,23 @@ const DisposalAgentsScreen: React.FC<DisposalAgentsScreenProps> = ({ navigation,
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#333" />
+      <LinearGradient
+        colors={['#2196F3', '#1976D2']}
+        style={styles.header}
+      >
+        <TouchableOpacity onPress={() => handleInteractivePress(() => navigation.goBack())} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Disposal Agents</Text>
-        <TouchableOpacity onPress={loadDisposalAgents} style={styles.refreshButton}>
-          <Ionicons name="refresh" size={20} color="#4CAF50" />
+        <TouchableOpacity onPress={() => handleInteractivePress(loadDisposalAgents)}>
+          <LinearGradient
+            colors={['#4CAF50', '#45A049']}
+            style={styles.refreshGradient}
+          >
+            <Ionicons name="refresh" size={20} color="#fff" />
+          </LinearGradient>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.introCard}>
@@ -298,7 +317,7 @@ const DisposalAgentsScreen: React.FC<DisposalAgentsScreenProps> = ({ navigation,
             <View style={styles.agentActions}>
               <TouchableOpacity 
                 style={styles.actionButton}
-                onPress={() => handleCallAgent(agent.phone)}
+                onPress={() => handleInteractivePress(() => handleCallAgent(agent.phone))}
               >
                 <Ionicons name="call" size={18} color="#4CAF50" />
                 <Text style={styles.actionButtonText}>Call</Text>
@@ -307,7 +326,7 @@ const DisposalAgentsScreen: React.FC<DisposalAgentsScreenProps> = ({ navigation,
               {agent.website && (
                 <TouchableOpacity 
                   style={styles.actionButton}
-                  onPress={() => handleVisitWebsite(agent.website!)}
+                  onPress={() => handleInteractivePress(() => handleVisitWebsite(agent.website!))}
                 >
                   <Ionicons name="globe" size={18} color="#2196F3" />
                   <Text style={styles.actionButtonText}>Website</Text>
@@ -316,18 +335,20 @@ const DisposalAgentsScreen: React.FC<DisposalAgentsScreenProps> = ({ navigation,
 
               <TouchableOpacity 
                 style={styles.actionButton}
-                onPress={() => handleGetDirections(agent.address)}
+                onPress={() => handleInteractivePress(() => handleGetDirections(agent.address))}
               >
                 <Ionicons name="navigate" size={18} color="#FF9800" />
                 <Text style={styles.actionButtonText}>Directions</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.primaryAction]}
-                onPress={() => handleContactAgent(agent)}
-              >
-                <Ionicons name="chatbubble" size={18} color="white" />
-                <Text style={[styles.actionButtonText, styles.primaryActionText]}>Contact</Text>
+              <TouchableOpacity onPress={() => handleInteractivePress(() => handleContactAgent(agent))}>
+                <LinearGradient
+                  colors={['#4CAF50', '#45A049']}
+                  style={[styles.actionButton, styles.primaryAction]}
+                >
+                  <Ionicons name="chatbubble" size={18} color="white" />
+                  <Text style={[styles.actionButtonText, styles.primaryActionText]}>Contact</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
@@ -360,12 +381,17 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 15,
-    backgroundColor: 'white',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  refreshGradient: {
+    padding: 8,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   backButton: {
     width: 40,
@@ -377,7 +403,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#fff',
     flex: 1,
     textAlign: 'center',
   },

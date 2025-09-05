@@ -1,0 +1,69 @@
+{
+  "name": "EcoHaul Simple Adaptive Disposal Centers",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "disposal-centers",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-disposal-centers-simple",
+      "name": "Webhook - Simple Adaptive Centers",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "disposal-centers-simple-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// EcoHaul Simple Adaptive Disposal Centers - Robust and Error-Free\nconst input = $json.body || $json;\nconst { \n  latitude, \n  longitude, \n  wasteType = 'general', \n  radius = 10, \n  maxResults = 10, \n  userPreferences = [], \n  urgency = 'normal',\n  transportMethod = 'car',\n  accessibility = 'normal',\n  budget = 'any',\n  timeConstraints = 'flexible',\n  environmentalFocus = 'moderate'\n} = input;\n\n// Validate input\nif (!latitude || !longitude) {\n  return [{\n    json: {\n      success: false,\n      error: 'Latitude and longitude are required',\n      hint: 'Please provide latitude and longitude coordinates'\n    }\n  }];\n}\n\n// Simple waste type categorization\nfunction categorizeWasteType(wasteType) {\n  const categories = {\n    plastic: { searchTerms: ['recycling center', 'plastic recycling'], priority: 'high' },\n    metal: { searchTerms: ['scrap yard', 'metal recycling'], priority: 'high' },\n    glass: { searchTerms: ['glass recycling', 'recycling center'], priority: 'medium' },\n    paper: { searchTerms: ['recycling center', 'paper recycling'], priority: 'medium' },\n    electronic: { searchTerms: ['electronic waste', 'e-waste center'], priority: 'high' },\n    hazardous: { searchTerms: ['hazardous waste facility'], priority: 'critical' },\n    organic: { searchTerms: ['composting facility', 'organic waste'], priority: 'medium' },\n    food: { searchTerms: ['composting facility', 'food waste'], priority: 'medium' },\n    textile: { searchTerms: ['textile recycling', 'clothing donation'], priority: 'medium' },\n    pharmaceutical: { searchTerms: ['pharmacy take-back', 'drug disposal'], priority: 'high' },\n    battery: { searchTerms: ['battery recycling', 'electronic waste'], priority: 'high' },\n    paint: { searchTerms: ['paint disposal', 'hazardous waste'], priority: 'high' }\n  };\n  \n  const type = wasteType.toLowerCase();\n  return categories[type] || {\n    searchTerms: [`${type} disposal`, 'waste management'],\n    priority: 'medium'\n  };\n}\n\n// Adaptive radius calculation\nfunction calculateAdaptiveRadius(baseRadius, wasteInfo, urgency, environmentalFocus) {\n  let adaptiveRadius = baseRadius;\n  \n  // Adjust for waste priority\n  if (wasteInfo.priority === 'critical') adaptiveRadius *= 2.0;\n  else if (wasteInfo.priority === 'high') adaptiveRadius *= 1.5;\n  else if (wasteInfo.priority === 'low') adaptiveRadius *= 0.7;\n  \n  // Adjust for urgency\n  if (urgency === 'urgent') adaptiveRadius *= 1.3;\n  else if (urgency === 'flexible') adaptiveRadius *= 1.8;\n  \n  // Adjust for environmental focus\n  if (environmentalFocus === 'high') adaptiveRadius *= 1.6;\n  else if (environmentalFocus === 'low') adaptiveRadius *= 0.8;\n  \n  return Math.min(Math.max(adaptiveRadius, 2), 50); // Between 2km and 50km\n}\n\n// Transport constraints\nfunction getTransportConstraints(transportMethod) {\n  const constraints = {\n    walking: { maxDistance: 2, preferences: ['nearby', 'pedestrian_friendly'] },\n    bicycle: { maxDistance: 8, preferences: ['bike_friendly', 'secure_parking'] },\n    car: { maxDistance: 30, preferences: ['parking_available', 'drive_through'] },\n    public_transport: { maxDistance: 20, preferences: ['transit_accessible'] },\n    wheelchair: { maxDistance: 5, preferences: ['wheelchair_accessible', 'ramp_access'] }\n  };\n  \n  return constraints[transportMethod] || constraints.car;\n}\n\n// Budget constraints\nfunction getBudgetConstraints(budget) {\n  const constraints = {\n    free: { maxCost: 0, label: 'Free only' },\n    low: { maxCost: 20, label: 'Under $20' },\n    moderate: { maxCost: 50, label: 'Under $50' },\n    high: { maxCost: 200, label: 'Premium options' },\n    any: { maxCost: 1000, label: 'Any cost' }\n  };\n  \n  return constraints[budget] || constraints.any;\n}\n\n// Generate adaptive centers\nfunction generateAdaptiveCenters(lat, lng, wasteInfo, constraints) {\n  const centers = [\n    {\n      id: 'adaptive-center-1',\n      name: `${wasteInfo.searchTerms[0].split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} Facility`,\n      address: '123 Green Processing Way, EcoCity',\n      latitude: lat + 0.008,\n      longitude: lng + 0.012,\n      distance: 1.2,\n      rating: 4.6,\n      phone: '(555) 123-GREEN',\n      website: 'www.ecoprocessing.com',\n      hours: 'Mon-Fri: 8AM-6PM, Sat: 9AM-4PM',\n      acceptedWaste: [wasteType, 'general'],\n      features: ['certified_facility', 'eco_friendly'],\n      estimatedCost: wasteInfo.priority === 'critical' ? 25 : 0,\n      priceRange: wasteInfo.priority === 'critical' ? '$25' : 'Free',\n      source: 'adaptive'\n    },\n    {\n      id: 'adaptive-center-2',\n      name: 'Community Recycling Hub',\n      address: '456 Sustainability Street',\n      latitude: lat - 0.015,\n      longitude: lng + 0.018,\n      distance: 2.8,\n      rating: 4.2,\n      phone: '(555) 456-RECYCLE',\n      website: 'www.communityrecycle.org',\n      hours: 'Tue-Sun: 10AM-5PM',\n      acceptedWaste: ['general', wasteType],\n      features: ['community_operated', 'volunteer_assistance'],\n      estimatedCost: 0,\n      priceRange: 'Free',\n      source: 'community'\n    },\n    {\n      id: 'adaptive-center-3',\n      name: 'Express Waste Solutions',\n      address: '789 Quick Disposal Lane',\n      latitude: lat + 0.022,\n      longitude: lng - 0.009,\n      distance: 3.5,\n      rating: 4.8,\n      phone: '(555) 789-EXPRESS',\n      website: 'www.expresswaste.com',\n      hours: '24/7 Drop-off Available',\n      acceptedWaste: [wasteType, 'general', 'specialized'],\n      features: ['24_hour_access', 'premium_service'],\n      estimatedCost: constraints.budget.maxCost > 50 ? 45 : 15,\n      priceRange: constraints.budget.maxCost > 50 ? '$45' : '$15',\n      source: 'commercial'\n    }\n  ];\n  \n  // Filter by distance and budget\n  let filteredCenters = centers.filter(center => {\n    return center.distance <= constraints.transport.maxDistance && \n           center.estimatedCost <= constraints.budget.maxCost;\n  });\n  \n  // Add adaptive scoring\n  filteredCenters = filteredCenters.map(center => {\n    let score = 100;\n    \n    // Distance scoring (closer is better)\n    score += Math.max(0, 50 - (center.distance * 10));\n    \n    // Rating bonus\n    score += (center.rating - 3.0) * 10;\n    \n    // Cost preference (free is better for budget-conscious)\n    if (center.estimatedCost === 0) score += 20;\n    \n    // Waste type compatibility\n    if (center.acceptedWaste.includes(wasteType)) score += 30;\n    \n    // Transport preference matching\n    const transportPrefs = constraints.transport.preferences || [];\n    transportPrefs.forEach(pref => {\n      if (center.features.some(f => f.includes(pref.replace('_', '')))) {\n        score += 15;\n      }\n    });\n    \n    return { ...center, adaptiveScore: Math.round(score) };\n  });\n  \n  // Sort by adaptive score\n  filteredCenters.sort((a, b) => b.adaptiveScore - a.adaptiveScore);\n  \n  return filteredCenters;\n}\n\n// Generate adaptive recommendations\nfunction generateRecommendations(centers, wasteInfo, constraints) {\n  const recommendations = [];\n  \n  if (centers.length === 0) {\n    recommendations.push({\n      type: 'no_results',\n      message: `No suitable ${wasteType} disposal facilities found within ${constraints.searchRadius}km`,\n      suggestions: [\n        'Try increasing your search radius',\n        'Consider alternative disposal methods',\n        'Contact your local waste management authority'\n      ]\n    });\n  } else {\n    const topCenter = centers[0];\n    recommendations.push({\n      type: 'best_match',\n      message: `${topCenter.name} is your best option`,\n      score: topCenter.adaptiveScore,\n      reasons: [\n        `Only ${topCenter.distance}km away`,\n        `Rated ${topCenter.rating}/5.0`,\n        `Cost: ${topCenter.priceRange}`,\n        `Accepts ${wasteType} waste`\n      ]\n    });\n    \n    // Budget-friendly options\n    const freeOptions = centers.filter(c => c.estimatedCost === 0);\n    if (freeOptions.length > 0) {\n      recommendations.push({\n        type: 'budget_friendly',\n        message: `${freeOptions.length} free disposal option(s) available`,\n        centers: freeOptions.slice(0, 2).map(c => c.name)\n      });\n    }\n  }\n  \n  return recommendations;\n}\n\n// Main execution\nconst wasteInfo = categorizeWasteType(wasteType);\nconst transportConstraints = getTransportConstraints(transportMethod);\nconst budgetConstraints = getBudgetConstraints(budget);\nconst searchRadius = calculateAdaptiveRadius(radius, wasteInfo, urgency, environmentalFocus);\n\nconst constraints = {\n  transport: transportConstraints,\n  budget: budgetConstraints,\n  searchRadius: searchRadius\n};\n\nconst adaptiveCenters = generateAdaptiveCenters(latitude, longitude, wasteInfo, constraints);\nconst recommendations = generateRecommendations(adaptiveCenters, wasteInfo, constraints);\n\n// Prepare response\nconst result = {\n  success: true,\n  timestamp: new Date().toISOString(),\n  adaptive_analysis: {\n    input_parameters: {\n      location: { latitude, longitude },\n      waste_type: wasteType,\n      transport_method: transportMethod,\n      accessibility: accessibility,\n      budget_range: budget,\n      urgency_level: urgency,\n      environmental_focus: environmentalFocus\n    },\n    adaptations_applied: {\n      search_radius_adjusted: `${radius}km → ${searchRadius}km`,\n      waste_priority: wasteInfo.priority,\n      transport_constraint: `${transportConstraints.maxDistance}km max`,\n      budget_filter: budgetConstraints.label\n    }\n  },\n  centers: adaptiveCenters,\n  totalFound: adaptiveCenters.length,\n  recommendations: recommendations,\n  search_metadata: {\n    original_radius: radius,\n    adaptive_radius: searchRadius,\n    filters_applied: [\n      `Distance: ≤${transportConstraints.maxDistance}km`,\n      `Budget: ${budgetConstraints.label}`,\n      `Waste type: ${wasteType}`,\n      `Priority: ${wasteInfo.priority}`\n    ]\n  }\n};\n\nreturn [{ json: result }];"
+      },
+      "id": "simple-adaptive-logic",
+      "name": "Simple Adaptive Logic",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "response-simple-adaptive",
+      "name": "Simple Adaptive Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Simple Adaptive Centers": {
+      "main": [
+        [
+          {
+            "node": "Simple Adaptive Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Adaptive Logic": {
+      "main": [
+        [
+          {
+            "node": "Simple Adaptive Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "createdAt": "2025-09-05T16:45:00.000Z",
+  "updatedAt": "2025-09-05T16:45:00.000Z",
+  "id": "simple-adaptive-disposal-centers-workflow"
+}
