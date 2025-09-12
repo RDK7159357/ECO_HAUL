@@ -2,13 +2,13 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
-// Add support for additional asset types
+// Add support for additional asset types (including TensorFlow.js models)
 config.resolver.assetExts.push(
   // Fonts
   'otf', 'ttf',
   // Images
   'svg', 'png', 'jpg', 'jpeg', 'gif', 'webp',
-  // Other
+  // TensorFlow.js and other assets
   'bin', 'txt', 'json'
 );
 
